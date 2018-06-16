@@ -18,19 +18,27 @@ import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 public class MainActivity extends AppCompatActivity implements Session.SessionListener, PublisherKit.PublisherListener{
 
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final int RC_SETTINGS_SCREEN_PERM = 123;
     private static final int RC_VIDEO_APP_PERM = 124;
-    private static String API_KEY = "";
-    private static String SESSION_ID = "";
-    private static String TOKEN = "";
+
+    private final Object lock = new Object();
+    private String API_KEY = "";
+    private String SESSION_ID = "";
+    private String TOKEN = "";
 
     private Session mSession;
-    private FrameLayout mPublisherViewContainer;
-    private FrameLayout mSubscriberViewContainer;
+    private RelativeLayout mPublisherViewContainer;
+    private LinearLayout mSubscriberViewContainer;
 
     private Publisher mPublisher;
     private Subscriber mSubscriber;
@@ -38,21 +46,25 @@ public class MainActivity extends AppCompatActivity implements Session.SessionLi
 
     public MainActivity(){
         try {
+
             Runnable fillInfo = new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        JSONObject apiProperties = Requester.getJSONObjectFromURL("https://pscagebot.herokuapp.com/session");
-                        API_KEY = apiProperties.getString("apiKey");
-                        SESSION_ID = apiProperties.getString("sessionId");
-                        TOKEN = apiProperties.getString("token");
-                        Log.i(LOG_TAG, SESSION_ID);
+                        synchronized (lock){
+                            JSONObject apiProperties = Requester.getJSONObjectFromURL("https://pscagebot.herokuapp.com/session");
+                            API_KEY = apiProperties.getString("apiKey");
+                            SESSION_ID = apiProperties.getString("sessionId");
+                            TOKEN = apiProperties.getString("token");
+                            lock.notify();
+                        }
                     } catch (Exception e){
                         e.printStackTrace();
                     }
                 }
             };
             new Thread(fillInfo).start();
+
         } catch (Exception e){
             e.printStackTrace();
         }
@@ -76,15 +88,15 @@ public class MainActivity extends AppCompatActivity implements Session.SessionLi
         String[] perms = { Manifest.permission.INTERNET, Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO };
         if (EasyPermissions.hasPermissions(this, perms)) {
             // initialize view objects from your layout
-            mPublisherViewContainer = (FrameLayout)findViewById(R.id.publisher_container);
-            mSubscriberViewContainer = (FrameLayout)findViewById(R.id.subscriber_container);
+            mPublisherViewContainer = findViewById(R.id.publisher_container);
+            mSubscriberViewContainer = findViewById(R.id.subscriber_container);
 
             // initialize and connect to the session
-            mSession = new Session.Builder(this, API_KEY, SESSION_ID).build();
-            mSession.setSessionListener(this);
-            mSession.connect(TOKEN);
-
-
+            synchronized (lock){
+                mSession = new Session.Builder(this, API_KEY, SESSION_ID).build();
+                mSession.setSessionListener(this);
+                mSession.connect(TOKEN);
+            }
         } else {
             EasyPermissions.requestPermissions(this, "This app needs access to your camera and mic to make video calls", RC_VIDEO_APP_PERM, perms);
         }
