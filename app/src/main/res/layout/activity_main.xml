@@ -37,12 +37,14 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:text="Surrogate Anrufen"
-            android:background="@android:color/holo_green_dark"/>
+            android:background="@android:color/holo_green_dark"
+            android:onClick="callSurrogate"/>
         <Button
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:text="Auflegen"
-            android:background="@android:color/holo_red_dark"/>
+            android:background="@android:color/holo_red_dark"
+            android:onClick="hangUp"/>
     </LinearLayout>
 
 </android.support.constraint.ConstraintLayout>

@@ -17,6 +17,7 @@ import org.json.JSONObject;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -37,11 +38,12 @@ public class MainActivity extends AppCompatActivity implements Session.SessionLi
     private String TOKEN = "";
 
     private Session mSession;
-    private RelativeLayout mPublisherViewContainer;
-    private LinearLayout mSubscriberViewContainer;
+    private LinearLayout mPublisherViewContainer;
+    private RelativeLayout mSubscriberViewContainer;
 
     private Publisher mPublisher;
     private Subscriber mSubscriber;
+    private boolean isAbleToCall = false;
 
 
     public MainActivity(){
@@ -57,9 +59,11 @@ public class MainActivity extends AppCompatActivity implements Session.SessionLi
                             SESSION_ID = apiProperties.getString("sessionId");
                             TOKEN = apiProperties.getString("token");
                             lock.notify();
+                            isAbleToCall=true;
                         }
                     } catch (Exception e){
                         e.printStackTrace();
+                        isAbleToCall=false;
                     }
                 }
             };
@@ -73,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements Session.SessionLi
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        requestPermissions();
+
     }
 
     @Override
@@ -87,18 +91,10 @@ public class MainActivity extends AppCompatActivity implements Session.SessionLi
     private void requestPermissions() {
         String[] perms = { Manifest.permission.INTERNET, Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO };
         if (EasyPermissions.hasPermissions(this, perms)) {
-            // initialize view objects from your layout
-            mPublisherViewContainer = findViewById(R.id.publisher_container);
-            mSubscriberViewContainer = findViewById(R.id.subscriber_container);
 
-            // initialize and connect to the session
-            synchronized (lock){
-                mSession = new Session.Builder(this, API_KEY, SESSION_ID).build();
-                mSession.setSessionListener(this);
-                mSession.connect(TOKEN);
-            }
         } else {
             EasyPermissions.requestPermissions(this, "This app needs access to your camera and mic to make video calls", RC_VIDEO_APP_PERM, perms);
+            isAbleToCall = false;
         }
     }
 
@@ -161,5 +157,25 @@ public class MainActivity extends AppCompatActivity implements Session.SessionLi
     @Override
     public void onError(PublisherKit publisherKit, OpentokError opentokError) {
         Log.e(LOG_TAG, "Publisher error: " + opentokError.getMessage());
+    }
+
+    public void callSurrogate(View view) {
+        requestPermissions();
+        if(isAbleToCall){
+            // initialize view objects from your layout
+            mPublisherViewContainer = findViewById(R.id.publisher_container);
+            mSubscriberViewContainer = findViewById(R.id.subscriber_container);
+
+            // initialize and connect to the session
+            synchronized (lock){
+                mSession = new Session.Builder(this, API_KEY, SESSION_ID).build();
+                mSession.setSessionListener(this);
+                mSession.connect(TOKEN);
+            }
+        }
+
+    }
+
+    public void hangUp(View view) {
     }
 }
