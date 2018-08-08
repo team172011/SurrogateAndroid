@@ -18,6 +18,7 @@ import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
 import android.view.View;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -103,8 +104,8 @@ public class MainActivity extends AppCompatActivity implements Session.SessionLi
     @Override
     public void onConnected(Session session) {
         Log.i(LOG_TAG, "Session Connected");
-
-        mPublisher = new Publisher.Builder(this).name("simonjw").build();
+        String name = ((EditText)findViewById(R.id.txtName)).getText().toString();
+        mPublisher = new Publisher.Builder(this).name(name).build();
         mPublisher.setPublisherListener(this);
 
         mPublisherViewContainer.addView(mPublisher.getView());
@@ -177,5 +178,7 @@ public class MainActivity extends AppCompatActivity implements Session.SessionLi
     }
 
     public void hangUp(View view) {
+        mSession.disconnect();
+        System.exit(0);
     }
 }
